@@ -1,0 +1,92 @@
+//添加 点击生成二维码接口 2017/4/19
+    public function Getqr(){
+        $params = $_GET;
+        if(!$params){
+            $params = file_get_contents("php://input");
+            $params = json_decode($params,true);
+        }
+
+
+        $db_activity_export = M('activity_export');
+        if(isset($params['path']) && isset($params['width'])){
+            $arr = explode("=", $params['path']);     
+            if($arr[1]){
+                //判断该活动 是否已经生成过二维码
+                $export_arr['aid'] = $arr[1];
+                $export_arr['extra1'] = array('exp','is not null');
+                $export_info = $db_activity_export->where($export_arr)->order('id desc')->find();
+                if($export_info){//之前导出过，有记录
+
+                    $result_data['ret'] = 1;
+                    $result_data['img_url'] = 'http://events.p100.com/Uploads/'.$export_info['extra1'];
+
+                }else{//没导出过，去生成  把生成的放在 相应位置，并且返回路径
+                    
+                    $data['path'] = $params['path'];
+                    $data['width'] = $params['width'];
+
+                    $qr_params = json_encode($data);
+                    $res = $this->GetSecret();
+                    if($res){
+                        $access_token = $res['access_token'];
+                        $qr_url = "https://api.weixin.qq.com/cgi-bin/wxaapp/createwxaqrcode?access_token=".$access_token;
+
+                        $qr_code = $this->postmethod($qr_url,$qr_params);
+
+                        $qr_base_path = "/usr/share/nginx/html/vote/Uploads/";
+
+                        $qr_path = $qr_base_path."{$export_arr['aid']}.png";
+                        file_put_contents($qr_path, $qr_code);
+
+                        $db_data['extra1'] = $export_arr['aid'].".png";
+                        $db_data['aid'] = $export_arr['aid'];
+
+                        $db_activity_export->add($db_data);
+
+                        $result_data['ret'] = 1;
+                        $result_data['img_url'] = 'http://events.p100.com/Uploads/'.$db_data['extra1'];
+
+                    }else{
+                        $result_data['ret'] = -1;
+                        $result_data['img_url'] = '';                        
+                    }
+                }
+            }
+        }else{
+            $result_data['ret'] = -1;
+            $result_data['img_url'] = '';  
+        }
+
+        echo json_encode($result_data);die;
+    }
+
+
+
+
+    private function postmethod($url, $post_data = '', $timeout = 5){//curl
+ 
+        $ch = curl_init();
+ 
+        curl_setopt ($ch, CURLOPT_URL, $url);
+ 
+        curl_setopt ($ch, CURLOPT_POST, 1);
+ 
+        if($post_data != ''){
+ 
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
+ 
+        }
+ 
+        curl_setopt ($ch, CURLOPT_RETURNTRANSFER, 1); 
+ 
+        curl_setopt ($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
+ 
+        curl_setopt($ch, CURLOPT_HEADER, false);
+ 
+        $file_contents = curl_exec($ch);
+ 
+        curl_close($ch);
+ 
+        return $file_contents;
+ 
+    }
