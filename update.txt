@@ -8,3 +8,5 @@
 5.这是新添加的行，为了测试git命令添加的
 
 6.create a new branch is quick & simple;
+
+7.this is branch text update.txt
