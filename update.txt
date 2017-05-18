@@ -6,3 +6,5 @@
 3,优化了后台规格添加
 4,优化了后台商品检索，考虑了规格为NULL的情况
 5.这是新添加的行，为了测试git命令添加的
+
+6.create a new branch is quick & simple;
